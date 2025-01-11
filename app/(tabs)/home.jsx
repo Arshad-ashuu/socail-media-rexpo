@@ -7,29 +7,9 @@ import { auth, db } from '../../firebaseConfig'; // Firebase config file path
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { useRouter } from 'expo-router'; // For navigation
 import { MaterialIcons } from '@expo/vector-icons';
-const defaultProfilePic = 'https://placekitten.com/200/200';
-const PostItem = ({ item }) => (
-  
-  <View style={styles.postContainer}>
-    {/* User info */}
-    <View style={styles.userContainer}>
-      <Image source={{ uri: item.userProfilePic || defaultProfilePic }} style={styles.profilePic} />
-      <View>
-        <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
-        <Text style={styles.timestamp}>{new Date(item.createdAt.seconds * 1000).toLocaleString()}</Text>
-      </View>
-    </View>
+import Story from '../Story';
 
-    {/* Post description */}
-    {item.description ? <Text style={styles.postDesc}>{item.description}</Text> : null}
-
-    {/* Post image */}
-    {item.imageURL && <Image source={{ uri: item.imageURL }} style={styles.postImage} />}
-
-   
-  </View>
-);
-
+// const defaultProfilePic = 'https://api.dicebear.com/9.x/notionists/svg?seed=Brooklynn'
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,17 +63,33 @@ const Home = () => {
 
           {loading ? (
             <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-          ) : (
+          ) : (<>
+            <Story/>
             <FlatList
               data={posts}
               style={styles.postList}
-              renderItem={({ item }) => <PostItem item={item} />}
+              renderItem={({ item }) => (
+                <View style={styles.postContainer}>
+                {/* User info */}
+                <View style={styles.userContainer}>
+                <Image source={{ uri: `https://avatar.iran.liara.run/username?username=${item.userName}`}} style={styles.profilePic} />
+
+                  <View>
+                    <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
+                  </View>
+                </View>
+              <Text style={styles.postDesc}>{item.description}</Text> 
+              <Image source={{ uri: item.imageURL }} style={styles.postImage} />
+
+              </View>
+              )}
               keyExtractor={(item) => item.id}
               ListEmptyComponent={<Text style={styles.emptyText}>No posts available</Text>}
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
               }
             />
+          </>
           )}
         </View>
       </SafeAreaView>
@@ -144,6 +140,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 10,
+    
   },
   username: {
     fontWeight: 'bold',
