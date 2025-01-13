@@ -30,13 +30,13 @@ const Signup = () => {
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        console.log('User', user);
+        // console.log('User', user);
 
         // Set the user's displayName (username) in Firebase Authentication
         updateProfile(user, {
           displayName: username,
         }).then(() => {
-          console.log('Display name set to:', username);
+          // console.log('Display name set to:', username);
 
           setModalMessage('User registered successfully!');
           setModalVisible(true);

@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../../contants'; // Ensure correct path to colors.js
+import { colors } from '../../contants';
 import { StatusBar } from 'expo-status-bar';
-import { auth, db } from '../../firebaseConfig'; // Firebase config file path
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { useRouter } from 'expo-router'; // For navigation
-import { MaterialIcons } from '@expo/vector-icons';
-import Story from '../Story';
+import { auth, db } from '../../firebaseConfig';
+import { collection, getDocs, orderBy, query, updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
-// const defaultProfilePic = 'https://api.dicebear.com/9.x/notionists/svg?seed=Brooklynn'
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +24,7 @@ const Home = () => {
       const fetchedPosts = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
+        likes: doc.data().likes || [],
       }));
 
       setPosts(fetchedPosts);
@@ -43,148 +42,241 @@ const Home = () => {
       }
     });
 
-    fetchPosts(); // Fetch posts initially
+    fetchPosts();
 
-    return () => unsubscribeAuth(); // Cleanup
+    return () => unsubscribeAuth();
   }, [router]);
+
+  const handleLike = async (postId) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const postRef = doc(db, 'posts', postId);
+    const post = posts.find(p => p.id === postId);
+    const isLiked = post.likes.includes(userId);
+
+    try {
+      await updateDoc(postRef, {
+        likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
+      });
+
+      // Update local state
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes: isLiked 
+              ? post.likes.filter(id => id !== userId)
+              : [...post.likes, userId]
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchPosts(); // Re-fetch posts
+    await fetchPosts();
     setRefreshing(false);
   };
 
+  const renderPost = ({ item }) => {
+    const isLiked = item.likes?.includes(auth.currentUser?.uid);
+    
+    return (
+      <View style={styles.postContainer}>
+        <View style={styles.userContainer}>
+          <Image 
+            source={{ uri: `https://avatar.iran.liara.run/username?username=${item.userName}`}} 
+            style={styles.profilePic}
+          />
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
+            <Text style={styles.timestamp}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
+          </View>
+        </View>
+        
+        <Text style={styles.postDesc}>{item.description}</Text>
+        
+        {item.imageURL && (
+          <Image 
+            source={{ uri: item.imageURL }} 
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        )}
+        
+        <View style={styles.interactions}>
+          <TouchableOpacity 
+            style={styles.likeButton} 
+            onPress={() => handleLike(item.id)}
+            activeOpacity={1}
+          >
+            <Feather 
+              name={isLiked ? "heart" : "heart"} 
+              size={24} 
+              color={isLiked ? colors.primary : colors.text}
+              style={styles.likeIcon}
+            />
+            <Text style={[styles.likeCount, isLiked && styles.likedCount]}>
+              {item.likes?.length || 0}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome back</Text>
           <Text style={styles.userNameText}>{auth.currentUser?.displayName || 'Guest'}</Text>
-
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-          ) : (<>
-            <Story/>
-            <FlatList
-              data={posts}
-              style={styles.postList}
-              renderItem={({ item }) => (
-                <View style={styles.postContainer}>
-                {/* User info */}
-                <View style={styles.userContainer}>
-                <Image source={{ uri: `https://avatar.iran.liara.run/username?username=${item.userName}`}} style={styles.profilePic} />
-
-                  <View>
-                    <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
-                  </View>
-                </View>
-              <Text style={styles.postDesc}>{item.description}</Text> 
-              <Image source={{ uri: item.imageURL }} style={styles.postImage} />
-
-              </View>
-              )}
-              keyExtractor={(item) => item.id}
-              ListEmptyComponent={<Text style={styles.emptyText}>No posts available</Text>}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-              }
-            />
-          </>
-          )}
         </View>
-      </SafeAreaView>
+
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+        ) : (
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            style={styles.postList}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Feather name="inbox" size={48} color={colors.secondaryText} />
+                <Text style={styles.emptyText}>No posts available</Text>
+              </View>
+            }
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        )}
+      </View>
       <StatusBar style="light" />
-    </>
+    </SafeAreaView>
   );
 };
 
-export default Home;
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 10,
+  },
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  header: {
+    marginBottom: 20,
   },
   welcomeText: {
     color: colors.primary,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 4,
   },
   userNameText: {
     color: colors.text,
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  postList: {
+    flex: 1,
   },
   postContainer: {
-    marginBottom: 15,
+    marginBottom: 16,
     backgroundColor: colors.cardBackground,
-    borderRadius: 15,
-    borderColor: colors.border,
-    borderWidth: 1,
-    padding: 15,
+    borderRadius: 16,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   userContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   profilePic: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-    
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  userInfo: {
+    flex: 1,
   },
   username: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontSize: 16,
     color: colors.text,
+    marginBottom: 2,
   },
   timestamp: {
-    color: colors.secondaryText,
-    fontSize: 12,
+    color: '#888',
+    fontSize: 13,
   },
   postDesc: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
-    marginVertical: 10,
+    lineHeight: 22,
+    marginBottom: 12,
   },
   postImage: {
     width: '100%',
-    height: 250,
-    borderRadius: 10,
-    marginVertical: 10,
+    height: 300,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: colors.border,
   },
-  interactions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  iconContainer: {
+
+  likeButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 8,
   },
-  iconText: {
-    fontSize: 14,
+  likeIcon: {
+    marginRight: 6,
+    // color: colors.text,
+  },
+  likeCount: {
+    fontSize: 15,
     color: colors.text,
-    marginLeft: 5,
+    fontWeight: '500',
   },
-  loader: {
-    marginTop: 20,
+  likedCount: {
+    color: colors.primary,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
   },
   emptyText: {
     color: colors.secondaryText,
+    fontSize: 16,
+    marginTop: 12,
     textAlign: 'center',
-    marginTop: 20,
   },
-  postList:{
-    marginBottom: 60,
+  loader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
+
+export default Home;

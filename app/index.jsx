@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import React, { useEffect } from 'react';
 import { router } from 'expo-router';
 import { auth } from '../firebaseConfig';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from 'firebase/auth';
+import { colors } from '../contants';
 
 const index = () => {
 
@@ -19,6 +20,10 @@ const index = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        <Image source={require('../assets/logo3.jpg')} 
+        resizeMode="cover"
+        style={{ width: 400, height: 500, marginBottom: -30 }}
+        />
         <Text style={styles.headerText}>Welcome to Explore</Text>
         <Text style={styles.subText}>Discover the world around you</Text>
         
@@ -36,7 +41,7 @@ const index = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212', // Dark background
+    backgroundColor: 'black', // Dark background
     justifyContent: 'center', // Center content vertically
     alignItems: 'center', // Center content horizontally
   },
@@ -57,7 +62,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#FF6347', // Custom button color
+    backgroundColor: colors.primary, // Custom button color
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 8,

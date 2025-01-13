@@ -4,13 +4,14 @@ import { Tabs } from "expo-router";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { Feather, Octicons } from "@expo/vector-icons";
 import Zocial from '@expo/vector-icons/Zocial';
+import { colors } from "../../contants";
 const TabLayout = () => {
   return (
     <>
 
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#FFA001",
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: "#CDCDE0",
           tabBarStyle: {
             backgroundColor: "#161622",
@@ -32,16 +33,7 @@ const TabLayout = () => {
             )
           }}
         />
-        <Tabs.Screen
-          name="Status"
-          options={{
-            title: "Status",
-            headerShown: false,
-            tabBarIcon: ({ color, size }) => (
-              <Zocial name="statusnet" size={24} color={color} />
-            )
-          }}
-        />
+       
         <Tabs.Screen
           name="post"
           options={{

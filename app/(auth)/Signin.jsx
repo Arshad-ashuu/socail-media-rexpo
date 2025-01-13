@@ -17,7 +17,7 @@ const Signin = () => {
         signInWithEmailAndPassword(auth, email, password)
             .then((userCredentials) => {
                 const user = userCredentials.user;
-                console.log(user);
+                // console.log(user);
                 setModalMessage('User logged in successfully!');
                 setModalVisible(true);
                 setTimeout(() => router.replace("/home"), 1500); // Redirect after a short delay
