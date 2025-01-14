@@ -10,20 +10,21 @@
     "splash": {
       "image": "./assets/logo3.png",
       "resizeMode": "contain",
-      "backgroundColor": "black"
+      "backgroundColor": "#000000" 
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo3.png",
-        "backgroundColor": "black"
+        
+        "foregroundImage": "./assets/logo3.png", 
+        "backgroundColor": "#000000"
       },
       "package": "com.arshad0110.xlpore"
     },
     "web": {
-      "favicon": "./assets/logo3.png",
+      "favicon": "./assets/logo3.png", 
       "bundler": "metro"
     },
     "plugins": [
