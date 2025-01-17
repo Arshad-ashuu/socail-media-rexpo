@@ -13,7 +13,7 @@ const defaultProfilePic = 'https://avatar.iran.liara.run/public/19';
 const Profile = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [modalType, setModalType] = useState(''); // To distinguish between delete and sign out modal
+  const [modalType, setModalType] = useState('');
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +24,9 @@ const Profile = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        fetchUserPosts(currentUser.uid); // Fetch posts for the authenticated user
+        fetchUserPosts(currentUser.uid);
       } else {
-        setUser(null); // Set user to null if not authenticated
+        setUser(null);
       }
     });
     return unsubscribe;
@@ -46,8 +46,6 @@ const Profile = () => {
       setPosts(userPosts);
     } catch (error) {
       console.error('Error fetching user posts:', error);
-      setModalMessage('Error fetching posts. Please try again later.');
-      setModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -89,9 +87,6 @@ const Profile = () => {
       router.replace('/Signin');
     } catch (error) {
       console.error('Sign out error:', error);
-      setModalMessage('Error signing out. Please try again.');
-      setModalType('info');
-      setModalVisible(true);
     }
   };
 
@@ -99,7 +94,7 @@ const Profile = () => {
     setModalVisible(false);
     if (confirm) {
       if (modalType === 'delete') {
-        const postId = modalMessage.split('_')[1]; // Get postId from message
+        const postId = modalMessage.split('_')[1];
         confirmDelete(postId);
       } else if (modalType === 'signOut') {
         confirmSignOut();
@@ -115,13 +110,11 @@ const Profile = () => {
             source={{ uri: `https://avatar.iran.liara.run/username?username=${item.userName}` || defaultProfilePic }}
             style={styles.postProfilePic}
           />
-          <View style={{flex:1, flexDirection: 'column'}}>
-          <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
-          <Text style={{color:'gray'}}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
-        </View>
-
+          <View>
+            <Text style={styles.username}>{item.userName || 'Anonymous'}</Text>
+            <Text style={styles.timestamp}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
           </View>
-
+        </View>
         <TouchableOpacity
           onPress={() => handleDeletePost(item.id)}
           style={styles.deleteButton}
@@ -141,158 +134,143 @@ const Profile = () => {
           style={styles.postImage}
           resizeMode="cover"
         />
-
       )}
-      <View
-        style={{marginTop: 10, flexDirection: 'row', padding:8}}
-      
-      >
-      <Feather
-        name={"heart"}
-        size={24}
-        color={colors.text}
-        style={{color: colors.text}}
-      />
-      <Text style={{color: colors.text, marginLeft: 8,marginTop:2}}>
-        {item.likes?.length || 0}
-      </Text>
-      </View>
-      
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.profileContainer}>
-        <Image
-          source={{ uri: user?.displayName || defaultProfilePic }}
-          style={styles.profilePicLarge}
-        />
-
-        <Text style={styles.usernameTitle}>{user?.displayName || 'Guest'}</Text>
-
-        <TouchableOpacity
-          onPress={handleSignOut}
-          style={styles.signOutButton}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.postsContainer}>
-        <Text style={styles.sectionTitle}>Your Posts</Text>
-
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-        ) : (
-          <FlatList
-            data={posts}
-            renderItem={({ item }) => <PostItem item={item} />}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Feather name="image" size={48} color={colors.secondaryText} />
-                <Text style={styles.emptyText}>No posts yet</Text>
-              </View>
-            }
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.profileContainer}>
+          <Image
+            source={{ uri: user?.photoURL || defaultProfilePic }}
+            style={styles.profilePicLarge}
           />
-        )}
-      </View>
-
-      {/* Modal for messages */}
-      <Modal
-        visible={modalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-            <View style={styles.modalButtons}>
+          <Text style={styles.usernameTitle}>{user?.displayName || 'Guest'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'No email provided'}</Text>
+          <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+    
+        <View style={styles.postsContainer}>
+          <Text style={styles.sectionTitle}>Your Posts</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <FlatList
+              data={posts}
+              renderItem={({ item }) => <PostItem item={item} />}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No posts to display</Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+    
+        {/* Modal for confirmation */}
+        <Modal
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+          animationType="fade"
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>{modalMessage}</Text>
               <Pressable
-                onPress={() => handleModalClose(false)}
-                style={styles.closeButton}
-              >
-                <Text style={styles.closeButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
+                style={[styles.modalButton, styles.modalConfirmButton]}
                 onPress={() => handleModalClose(true)}
-                style={[styles.closeButton, { backgroundColor: 'white' }]}
               >
-                <Text style={[styles.closeButtonText, { color: '#000' }]}>{modalType === 'signOut' ? 'Sign Out' : 'Delete'}</Text>
+                <Text style={styles.modalButtonText}>
+                  {modalType === 'delete' ? 'Delete' : modalType === 'signOut' ? 'Sign Out' : 'OK'}
+                </Text>
               </Pressable>
+              {modalType !== 'info' && (
+                <Pressable
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={() => handleModalClose(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </Pressable>
+              )}
             </View>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
-  );
+        </Modal>
+      </SafeAreaView>
+    );
+    
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'black', // Dark background
   },
   profileContainer: {
     alignItems: 'center',
-    paddingVertical: 24,
+    padding: 20,
+    backgroundColor: 'black',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#333',
   },
   profilePicLarge: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 16,
-    borderWidth: 3,
-    borderColor: colors.primary,
+    borderWidth: 2,
+    borderColor: '#444',
+    marginBottom: 10,
   },
   usernameTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#BBBBBB',
+    marginBottom: 15,
   },
   signOutButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
     borderRadius: 12,
   },
   signOutText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
   postsContainer: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 15,
+    paddingTop: 10,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
   },
   postContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: 16,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   postHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   userContainer: {
     flexDirection: 'row',
@@ -302,85 +280,81 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#444',
   },
   username: {
     fontSize: 16,
+    color: '#FFFFFF',
     fontWeight: '600',
-    color: colors.text,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: '#BBBBBB',
   },
   deleteButton: {
-    padding: 8,
-
+    padding: 5,
   },
   postDesc: {
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 12,
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 10,
     lineHeight: 20,
   },
   postImage: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.border,
+    borderRadius: 10,
+    marginTop: 10,
   },
   emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
+    marginTop: 20,
   },
   emptyText: {
-    color: colors.secondaryText,
     fontSize: 16,
-    marginTop: 12,
-    textAlign: 'center',
+    color: '#BBBBBB',
+    fontStyle: 'italic',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Darker semi-transparent overlay
+    borderRadius:15,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   modalContent: {
-    backgroundColor: 'rgba(18, 18, 18, 0.95)', // Almost black with slight transparency
-    padding: 24,
-    borderRadius: 16,
+    width: '80%',
+    backgroundColor: '#1E1E1E',
+    padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
-    width: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 6,
   },
-  modalMessage: {
+  modalText: {
     fontSize: 16,
-    color: '#F5F5F5', // Light text for contrast
-    marginBottom: 20,
+    color: '#FFFFFF',
     textAlign: 'center',
+    marginBottom: 20,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginVertical: 5,
   },
-  closeButton: {
-    backgroundColor: '#1E90FF', // A bright blue for better visibility
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+  modalConfirmButton: {
+    backgroundColor: '#D32F2F',
   },
-  closeButtonText: {
-    color: '#fff',
+  modalCancelButton: {
+    backgroundColor: '#444',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-  },
-  loader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontWeight: '600',
   },
 });
+
 
 export default Profile;

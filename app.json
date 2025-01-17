@@ -5,26 +5,25 @@
     "scheme": "xlpore",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo3.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/logo3.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000" 
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        
-        "foregroundImage": "./assets/logo3.png", 
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
       "package": "com.arshad0110.xlpore"
     },
     "web": {
-      "favicon": "./assets/logo3.png", 
+      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
